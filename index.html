@@ -4,6 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>PrintLab — A4 Sheet & Ink-Saver Studio</title>
+<meta name="description" content="PrintLab turns photos and notes into exact A4 print sheets — save ink, print passport photos, and export PDF or PNG. Works offline.">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#141416">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PrintLab">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <style>
 :root{--bg:#141416;--card:#1E1E22;--bd:#2C2C32;--ac:#D96B43;--tx:#F4F2EE;--mu:#9d9aa2;--h:52px}
 *{box-sizing:border-box}html,body{height:100%;margin:0}
@@ -48,10 +57,29 @@ select,input[type=text],input[type=number],input[type=date]{width:100%;backgroun
 .drag .stage{outline:2px dashed var(--ac);outline-offset:-6px}
 #bar{display:none;gap:8px;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--bd)}
 #bar .btn{flex:1;padding:11px}
+#installBtn{margin-left:auto}
+.installBtn[hidden]{display:none}
+a.btn{text-decoration:none}
+.creator{display:flex;gap:10px;align-items:center}
+.avatar{width:44px;height:44px;flex:none;border-radius:50%;background:var(--ac);color:#141416;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px}
+.abtabs{display:flex;gap:4px;margin-bottom:12px}
+.abtabs button{flex:1;background:none;border:1px solid var(--bd);border-radius:6px;padding:7px 2px;color:var(--mu);font-size:13px}
+.abtabs button.on{background:#2C2C32;border-color:#3a3a42;color:var(--tx)}
+.chip{display:inline-block;border:1px solid var(--bd);border-radius:999px;padding:4px 10px;font-size:12px;color:var(--mu);margin:0 6px 6px 0}
+.abstep{border:1px solid var(--bd);border-radius:6px;padding:10px;margin-top:8px;cursor:pointer}
+.abstep h4{margin:0;font-size:13px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.abstep p{margin:8px 0 0;color:var(--mu);font-size:13px}
+.abchev{display:inline-flex;flex:none}.abstep.open .abchev svg{transform:rotate(90deg)}
+.feat{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.feat div{border:1px solid var(--bd);border-radius:6px;padding:10px}
+.feat h4{margin:0 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.feat p{margin:0;color:var(--mu);font-size:12px}
+.other{border:1px solid var(--ac);border-radius:8px;padding:12px;margin-bottom:12px;background:var(--card)}
+.other h3{margin:0 0 8px;font-size:14px}
 #toast{position:fixed;left:50%;bottom:76px;transform:translateX(-50%);background:#2C2C32;border:1px solid var(--ac);padding:9px 14px;border-radius:6px;z-index:50;display:none;max-width:90vw}
 #printArea{display:none}
 @media(max-width:860px){
- #menu{display:inline-flex}.brand span{display:none}.tabs{margin-left:0}.tabs button{padding:7px 9px}
+ #menu{display:inline-flex}.brand span{display:none}.tabs{margin-left:0}.tabs button{padding:7px 9px}.tabs .tl{display:none}
  #side{position:fixed;left:0;top:var(--h);bottom:0;width:min(340px,88vw);z-index:20;transform:translateX(-100%);transition:transform .2s;box-shadow:4px 0 16px rgba(0,0,0,.5)}
  #side.open{transform:none}#bar{display:flex}.badge{max-width:none}.desk{display:none}
 }
@@ -74,15 +102,19 @@ select,input[type=text],input[type=number],input[type=date]{width:100%;backgroun
 <symbol id="i-page" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM15 3v4h4"/></symbol>
 <symbol id="i-notes" viewBox="0 0 24 24"><path d="M5 5h14M5 10h14M5 15h9"/><path d="M5 20h5"/></symbol>
 <symbol id="i-crop" viewBox="0 0 24 24"><path d="M6 2v14h16M2 6h14v16"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+<symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4 11 13M9 5H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3"/></symbol>
 </defs></svg>
 
 <header>
  <button class="btn sm" id="menu" data-act="menu" aria-label="Open tools"><svg class="i"><use href="#i-menu"/></svg></button>
  <div class="brand"><svg class="i"><use href="#i-page"/></svg><span>PrintLab</span></div>
  <nav class="tabs">
-  <button data-mode="ink" class="on"><svg class="i"><use href="#i-notes"/></svg>Ink-saver notes</button>
-  <button data-mode="photo"><svg class="i"><use href="#i-crop"/></svg>Photo sheets</button>
+  <button data-mode="ink" class="on"><svg class="i"><use href="#i-notes"/></svg><span class="tl">Ink-saver notes</span></button>
+  <button data-mode="photo"><svg class="i"><use href="#i-crop"/></svg><span class="tl">Photo sheets</span></button>
+  <button data-mode="about"><svg class="i"><use href="#i-info"/></svg><span class="tl">About</span></button>
  </nav>
+ <button class="btn installBtn" id="installBtn" hidden><svg class="i"><use href="#i-pdf"/></svg><span class="desk">Install app</span></button>
 </header>
 
 <div id="app">
@@ -133,7 +165,7 @@ const DEF={mode:'ink',
  photo:{paper:'a4',pw:210,ph:297,size:'in',w:35,h:45,strip:false,name:'',date:new Date().toISOString().slice(0,10),auto:true,count:6,marks:true,border:true,margin:8,gap:3}};
 const KEY='printlab.v1';
 function load(){try{const j=JSON.parse(localStorage.getItem(KEY)||'{}');return{mode:j.mode==='photo'?'photo':'ink',ink:{...DEF.ink,...j.ink},photo:{...DEF.photo,...j.photo}}}catch(e){return JSON.parse(JSON.stringify(DEF))}}
-let S=load(),INK=[],PH=[],uid=0,active=0,pg=0,zoom='fit',tm,rt;
+let S=load(),INK=[],PH=[],uid=0,active=0,pg=0,zoom='fit',tm,rt,view='tool';
 
 /* ---------- toast / busy ---------- */
 function toast(m,ms=3200){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(tm);tm=setTimeout(()=>t.style.display='none',ms)}
@@ -184,6 +216,42 @@ $('#side').innerHTML=`
   ${tg('photo','auto','Auto-fill sheet')}${num('photo','count','Copies (when auto-fill is off)',1,200,1)}
   ${sl('photo','margin','Page margin',0,30,.5,' mm')}${sl('photo','gap','Gap spacing',0,20,.5,' mm')}
   ${tg('photo','marks','Corner crop marks')}${tg('photo','border','0.3 mm hairline border')}</div>
+</section>
+<section id="pAbout" hidden>
+ <div class="card"><h3>About PrintLab</h3>
+  <div class="creator"><div class="avatar">SM</div><div><b>Shahzaib Muzaffar</b><p class="mu" style="margin:2px 0">Creator • PrintLab</p></div></div>
+  <p class="mu">Creator of PrintLab. I built this so printing stops wasting ink and paper: drop in a photo or a page, tune it once, and get an exact A4 sheet that is ready to print.</p>
+  <div class="btns"><a class="btn" href="https://github.com/novahbyshahzaib" target="_blank" rel="noopener">View on GitHub</a></div></div>
+ <div class="card">
+  <div class="abtabs">
+   <button data-atab="story" class="on">My story</button>
+   <button data-atab="how">How it works</button>
+   <button data-atab="why">Why PrintLab</button>
+  </div>
+  <div id="ab-story">
+   <p class="mu">I kept needing passport photos and printouts, and every tool either wasted ink or got the sizes wrong. So I built PrintLab: one page that turns your images into exact, print-ready A4 sheets — no accounts, no uploads, no fuss.</p>
+   <p class="mu">Everything runs in your browser. Your photos never leave your device, and your settings are saved on the device for next time.</p>
+   <div><span class="chip">No sign-up needed</span><span class="chip">Works offline</span><span class="chip">Exact mm sizes</span></div>
+  </div>
+  <div id="ab-how" hidden>
+   <div class="abstep" data-astep="0"><h4>1. Add images or photos <span class="abchev">${ic('right')}</span></h4><p hidden>Tap Add images, drop files anywhere, or press Ctrl+V to paste. JPG, PNG and WebP all work.</p></div>
+   <div class="abstep" data-astep="1"><h4>2. Tune it your way <span class="abchev">${ic('right')}</span></h4><p hidden>Ink-saver mode inverts dark pages and cuts ink use. Photo mode crops passport and ID sizes, with cut marks and a name strip.</p></div>
+   <div class="abstep" data-astep="2"><h4>3. Export or print <span class="abchev">${ic('right')}</span></h4><p hidden>Download an exact PDF or PNG, or print straight from the app at 100% / Actual Size.</p></div>
+  </div>
+  <div id="ab-why" hidden>
+   <p class="mu">PrintLab is built to be honest about printing: what you see on the sheet is what comes out of the printer — exact millimetres, no hidden resizing.</p>
+   <div class="feat">
+    <div><h4>Ink-saver</h4><p>Smart invert turns dark pages light, so you print with far less ink.</p></div>
+    <div><h4>Exact sizes</h4><p>Passport, stamp, PAN and visa sizes at true millimetres, with rulers and cut marks.</p></div>
+    <div><h4>Private by design</h4><p>No uploads, no accounts. Your images stay on your device.</p></div>
+    <div><h4>Free to use</h4><p>Every feature works in the browser, with nothing to install — unless you want the app.</p></div>
+   </div>
+  </div>
+ </div>
+ <div class="other"><h3>See my other work</h3>
+  <p class="mu"><b style="color:var(--tx)">SnoahShare</b> — share files between any two devices. Upload on one, open the room code on the other, and download. No accounts, no cables, no fuss.</p>
+  <div class="btns"><a class="btn pri" href="https://get-connected-snoah.vercel.app" target="_blank" rel="noopener">Open SnoahShare ${ic('ext')}</a></div></div>
+ <button class="btn" data-act="backtools">${ic('left')}Back to tools</button>
 </section>`;}
 
 /* ---------- state sync ---------- */
@@ -191,8 +259,9 @@ function sync(){
  $$('[data-g]').forEach(el=>{const v=S[el.dataset.g][el.dataset.k];if(el.type==='checkbox')el.checked=!!v;else if(document.activeElement!==el)el.value=v;
   const b=$('#v-'+el.dataset.g+'-'+el.dataset.k);if(b)b.textContent=' '+v+b.dataset.u});
  const p=PH[active];if(p){$('#zoomR').value=p.z;$('#briR').value=p.bri;$('#vz').textContent=' '+p.z.toFixed(2)+'×';$('#vb').textContent=' '+p.bri}
- $$('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.mode===S.mode));
- $('#pInk').hidden=S.mode!=='ink';$('#pPhoto').hidden=S.mode!=='photo';
+ $$('.tabs button').forEach(b=>b.classList.toggle('on',view==='about'?b.dataset.mode==='about':b.dataset.mode===S.mode));
+ $('#pInk').hidden=view!=='tool'||S.mode!=='ink';$('#pPhoto').hidden=view!=='tool'||S.mode!=='photo';
+ const pa=$('#pAbout');if(pa)pa.hidden=view!=='about';
  $$('[data-act=zoom]').forEach(b=>b.classList.toggle('on',String(b.dataset.z)===String(zoom)));
 }
 document.addEventListener('input',e=>{
@@ -408,7 +477,9 @@ async function printSheets(){
 
 /* ---------- actions ---------- */
 document.addEventListener('click',e=>{
- const m=e.target.closest('[data-mode]');if(m){S.mode=m.dataset.mode;pg=0;$('#side').classList.remove('open');ui();return}
+ const m=e.target.closest('[data-mode]');if(m){if(m.dataset.mode==='about'){view='about';$('#side').classList.add('open');sync();syncAbout();return}view='tool';S.mode=m.dataset.mode;pg=0;$('#side').classList.remove('open');ui();return}
+ const at=e.target.closest('[data-atab]');if(at){aboutTab=at.dataset.atab;syncAbout();return}
+ const as=e.target.closest('[data-astep]');if(as){aboutStep=aboutStep===+as.dataset.astep?null:+as.dataset.astep;syncAbout();return}
  const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act,i=+b.dataset.i;
  if(a==='del'&&e.target.closest('.qi')&&b.classList.contains('qi'))return;
  switch(a){
@@ -416,11 +487,38 @@ document.addEventListener('click',e=>{
   case'reset':Object.assign(S.ink,{invert:false,hue:false,white:225,mono:'color',eco:false,bri:0,con:0,sharp:0});sync();render();break;
   case'up':mv(i,-1);break;case'down':mv(i,1);break;case'del':e.stopPropagation();del(i);break;
   case'sel':active=i;ui();break;case'menu':$('#side').classList.toggle('open');break;
+  case'backtools':view='tool';ui();break;
   case'prevp':if(S.mode==='ink'&&pg>0){pg--;render()}break;case'nextp':if(S.mode==='ink'&&pg<inkPages()-1){pg++;render()}break;
   case'zoom':zoom=b.dataset.z==='fit'?'fit':+b.dataset.z;applyZoom();break;
  }
 });
 $('#main').addEventListener('click',()=>$('#side').classList.remove('open'));
+
+/* ---------- about ---------- */
+let aboutTab='story',aboutStep=0;
+function syncAbout(){
+ $$('#pAbout [data-atab]').forEach(b=>b.classList.toggle('on',b.dataset.atab===aboutTab));
+ $('#ab-story').hidden=aboutTab!=='story';
+ $('#ab-how').hidden=aboutTab!=='how';
+ $('#ab-why').hidden=aboutTab!=='why';
+ $$('#pAbout .abstep').forEach(s=>{const open=aboutStep===+s.dataset.astep;s.classList.toggle('open',open);s.querySelector('p').hidden=!open});
+}
+
+/* ---------- PWA install ---------- */
+let deferredPrompt=null;
+const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+const isStandalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+function refreshInstall(){$$('.installBtn').forEach(b=>{b.hidden=isStandalone||(!deferredPrompt&&!isIOS)})}
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;refreshInstall()});
+window.addEventListener('appinstalled',()=>{deferredPrompt=null;refreshInstall();toast('PrintLab installed. Find it on your home screen.')});
+async function installApp(){
+ if(deferredPrompt){deferredPrompt.prompt();const r=await deferredPrompt.userChoice;deferredPrompt=null;refreshInstall();if(r&&r.outcome==='accepted')toast('Installing PrintLab…');return}
+ if(isIOS){toast('To install: tap Share, then “Add to Home Screen”.',6000);return}
+ toast('Install is not available in this browser. Try Chrome or Edge on Android, or Safari on iPhone.',6000);
+}
+document.addEventListener('click',e=>{if(e.target.closest('.installBtn'))installApp()});
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})})}
+refreshInstall();
 
 build();initCrop();ui();
 })();
