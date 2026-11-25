@@ -115,6 +115,9 @@ a.btn{text-decoration:none}
 <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4 11 13M9 5H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3"/></symbol>
 <symbol id="i-share" viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.5"/><circle cx="17.5" cy="5.5" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/><path d="m8.2 10.8 6.7-4M8.2 13.2l6.7 4"/></symbol>
 <symbol id="i-ai" viewBox="0 0 24 24"><path d="M12 3.5 13.8 8.7 19 10.5 13.8 12.3 12 17.5 10.2 12.3 5 10.5 10.2 8.7Z"/><path d="M18.5 15.5l.8 2.1 2.1.8-2.1.8-.8 2.1-.8-2.1-2.1-.8 2.1-.8Z"/></symbol>
+<symbol id="i-grid" viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></symbol>
+<symbol id="i-save" viewBox="0 0 24 24"><path d="M5 3h12l4 4v14H5zM8 3v5h8V3M8 21v-7h8v7"/></symbol>
+<symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6h6l2 2h10v12H3z"/></symbol>
 </defs></svg>
 
 <header>
@@ -123,6 +126,7 @@ a.btn{text-decoration:none}
  <nav class="tabs">
   <button data-mode="ink" class="on"><svg class="i"><use href="#i-notes"/></svg><span class="tl">Ink-saver notes</span></button>
   <button data-mode="photo"><svg class="i"><use href="#i-crop"/></svg><span class="tl">Photo sheets</span></button>
+  <button data-mode="tpl"><svg class="i"><use href="#i-grid"/></svg><span class="tl">Templates</span></button>
   <button data-mode="about"><svg class="i"><use href="#i-info"/></svg><span class="tl">About</span></button>
  </nav>
  <button class="btn installBtn" id="installBtn" hidden><svg class="i"><use href="#i-pdf"/></svg><span class="desk">Install app</span></button>
@@ -169,8 +173,9 @@ const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const mk=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ic=n=>`<svg class="i"><use href="#i-${n}"/></svg>`;
-const PAPER={a4:[210,297],'4x6':[102,152]};
-const SIZES={in:[35,45],stamp:[25,30],pan:[25,35],us:[51,51],post:[102,152]};
+const PAPER={a4:[210,297],'4x6':[102,152],letter:[216,279],legal:[216,356],a5:[148,210]};
+const SHEET={a4:[210,297],letter:[216,279],legal:[216,356],a5:[148,210]};
+const SIZES={in:[35,45],stamp:[25,30],pan:[25,35],us:[51,51],post:[102,152],eu:[35,45],in2:[51,51]};
 /* ---------- my other work ----------
    To add a project, add ONE entry to PROJECTS below — nothing else
    needs to change. icon = an SVG symbol name (see the <symbol> list,
@@ -181,10 +186,11 @@ const PROJECTS=[
 ];
 const projCard=p=>`<article class="pcard"><div class="phead"><div class="picon" style="background:${p.accent}">${ic(p.icon)}</div><div><h4>${p.name}</h4><p class="ptag">${p.tag}</p></div></div><p class="pdesc">${p.desc}</p><a class="btn" href="${p.url}" target="_blank" rel="noopener">Open ${ic('ext')}</a></article>`;
 const DEF={mode:'ink',
- ink:{invert:false,hue:false,white:225,mono:'color',eco:false,bri:0,con:0,sharp:0,per:1,orient:'portrait',margin:10,gap:5,border:false},
- photo:{paper:'a4',pw:210,ph:297,size:'in',w:35,h:45,strip:false,name:'',date:new Date().toISOString().slice(0,10),auto:true,count:6,marks:true,border:true,margin:8,gap:3}};
+ ink:{invert:false,hue:false,white:225,mono:'color',eco:false,scan:false,paper:'a4',bri:0,con:0,sharp:0,per:1,orient:'portrait',margin:10,gap:5,border:false},
+ photo:{paper:'a4',pw:210,ph:297,size:'in',w:35,h:45,strip:false,name:'',date:new Date().toISOString().slice(0,10),auto:true,count:6,marks:true,border:true,margin:8,gap:3},
+ tpl:{kind:'lined',month:new Date().toISOString().slice(0,7),line:7,grid:5,todo:12,tcols:2,trows:4}};
 const KEY='printlab.v1';
-function load(){try{const j=JSON.parse(localStorage.getItem(KEY)||'{}');return{mode:j.mode==='photo'?'photo':'ink',ink:{...DEF.ink,...j.ink},photo:{...DEF.photo,...j.photo}}}catch(e){return JSON.parse(JSON.stringify(DEF))}}
+function load(){try{const j=JSON.parse(localStorage.getItem(KEY)||'{}');return{mode:['ink','photo','tpl'].includes(j.mode)?j.mode:'ink',ink:{...DEF.ink,...j.ink},photo:{...DEF.photo,...j.photo},tpl:{...DEF.tpl,...j.tpl}}}catch(e){return JSON.parse(JSON.stringify(DEF))}}
 let S=load(),INK=[],PH=[],uid=0,active=0,pg=0,zoom='fit',tm,rt,view='tool';
 
 /* ---------- toast / busy ---------- */
@@ -207,13 +213,36 @@ $('#side').innerHTML=`
   ${sl('ink','white','White point',150,255,1)}
   ${sel('ink','mono','Colour mode',[['color','Full colour'],['gray','Greyscale'],['bw','Pure black and white']])}
   ${tg('ink','eco','Eco-ink (charcoal black)')}
+  ${tg('ink','scan','Scan document (clean black &amp; white)')}
   ${sl('ink','bri','Brightness',-100,100,1)}${sl('ink','con','Contrast',-100,100,1)}${sl('ink','sharp','Sharpness',0,100,1)}
   <button class="btn" data-act="reset">${ic('reset')}Reset filters</button></div>
- <div class="card"><h3>A4 layout</h3>
+ <div class="card"><h3>Sheet layout</h3>
+  ${sel('ink','paper','Paper size',[['a4','A4 (210 × 297 mm)'],['letter','Letter (216 × 279 mm)'],['legal','Legal (216 × 356 mm)'],['a5','A5 (148 × 210 mm)']])}
   ${sel('ink','per','Images per page',[[1,'1'],[2,'2'],[4,'4'],[6,'6']])}
   ${sel('ink','orient','Orientation',[['portrait','Portrait'],['landscape','Landscape']])}
   ${sl('ink','margin','Page margin',0,30,.5,' mm')}${sl('ink','gap','Gap spacing',0,20,.5,' mm')}${tg('ink','border','Hairline image borders')}</div>
  <div class="card"><h3>Ink coverage</h3><div id="meter"></div></div>
+ <div class="card"><h3>My projects ${ic('folder')}</h3>
+  <p class="mu">Save this project on this device and reopen it later. Photos are stored on the device, not uploaded.</p>
+  <label class="row"><span>Project name</span><input type="text" id="pjName-ink" maxlength="60" placeholder="e.g. Passport photos Nov"></label>
+  <div class="btns"><button class="btn pri" data-act="saveproj" data-side="ink">${ic('save')}Save project</button></div>
+  <div id="pjList-ink"></div></div>
+</section>
+<section id="pTpl" hidden>
+ <div class="card"><h3>Ready-made sheets</h3>
+  <p class="mu">Pick a template — it draws a print-ready sheet. Export it as PDF or PNG like any other sheet.</p>
+  <div class="btns" id="tplKinds">
+   <button class="btn" data-tplkind="lined">Lined paper</button>
+   <button class="btn" data-tplkind="grid">Grid paper</button>
+   <button class="btn" data-tplkind="flash">Flashcards</button>
+   <button class="btn" data-tplkind="labels">Labels</button>
+   <button class="btn" data-tplkind="todo">To-do list</button>
+   <button class="btn" data-tplkind="cal">Calendar</button>
+  </div>
+  <div id="tplOpts"></div></div>
+ <div class="card"><h3>Sheet layout</h3>
+  ${sel('ink','paper','Paper size',[['a4','A4 (210 × 297 mm)'],['letter','Letter (216 × 279 mm)'],['legal','Legal (216 × 356 mm)'],['a5','A5 (148 × 210 mm)']])}
+  <p class="mu">Templates use the same paper size as Ink-saver notes.</p></div>
 </section>
 <section id="pPhoto" hidden>
  <div class="card"><h3>Photos</h3>
@@ -223,10 +252,10 @@ $('#side').innerHTML=`
    <label class="row"><span>Zoom<b id="vz"></b></span><input type="range" id="zoomR" min="1" max="4" step="0.01"></label>
    <label class="row"><span>Exposure<b id="vb"></b></span><input type="range" id="briR" min="-50" max="50" step="1"></label></div></div>
  <div class="card"><h3>Paper</h3>
-  ${sel('photo','paper','Paper size',[['a4','A4 sheet (210 × 297 mm)'],['4x6','4×6 photo sheet (102 × 152 mm)'],['custom','Custom']])}
+  ${sel('photo','paper','Paper size',[['a4','A4 sheet (210 × 297 mm)'],['4x6','4×6 photo sheet (102 × 152 mm)'],['letter','Letter (216 × 279 mm)'],['legal','Legal (216 × 356 mm)'],['a5','A5 (148 × 210 mm)'],['custom','Custom']])}
   <div class="two">${num('photo','pw','Width (mm)')}${num('photo','ph','Height (mm)')}</div></div>
  <div class="card"><h3>Photo size</h3>
-  ${sel('photo','size','Preset',[['in','Indian passport / exam (35 × 45)'],['stamp','Stamp size (25 × 30)'],['pan','PAN / document ID (25 × 35)'],['us','US / visa square (51 × 51)'],['post','Postcard (102 × 152)'],['custom','Custom']])}
+  ${sel('photo','size','Preset',[['in','Indian passport / exam (35 × 45)'],['eu','Schengen / EU passport (35 × 45)'],['in2','India passport (51 × 51)'],['stamp','Stamp size (25 × 30)'],['pan','PAN / document ID (25 × 35)'],['us','US passport / visa (51 × 51)'],['post','Postcard (102 × 152)'],['custom','Custom']])}
   <div class="two">${num('photo','w','Width (mm)')}${num('photo','h','Height (mm)')}</div></div>
  <div class="card"><h3>Name and date strip</h3>
   ${tg('photo','strip','Show white strip at the bottom')}
@@ -236,6 +265,11 @@ $('#side').innerHTML=`
   ${tg('photo','auto','Auto-fill sheet')}${num('photo','count','Copies (when auto-fill is off)',1,200,1)}
   ${sl('photo','margin','Page margin',0,30,.5,' mm')}${sl('photo','gap','Gap spacing',0,20,.5,' mm')}
   ${tg('photo','marks','Corner crop marks')}${tg('photo','border','0.3 mm hairline border')}</div>
+ <div class="card"><h3>My projects ${ic('folder')}</h3>
+  <p class="mu">Save this project on this device and reopen it later. Photos are stored on the device, not uploaded.</p>
+  <label class="row"><span>Project name</span><input type="text" id="pjName-photo" maxlength="60" placeholder="e.g. Passport photos Nov"></label>
+  <div class="btns"><button class="btn pri" data-act="saveproj" data-side="photo">${ic('save')}Save project</button></div>
+  <div id="pjList-photo"></div></div>
 </section>
 <section id="pAbout" hidden>
  <div class="card"><h3>About PrintLab</h3>
@@ -281,6 +315,7 @@ function sync(){
  const p=PH[active];if(p){$('#zoomR').value=p.z;$('#briR').value=p.bri;$('#vz').textContent=' '+p.z.toFixed(2)+'×';$('#vb').textContent=' '+p.bri}
  $$('.tabs button').forEach(b=>b.classList.toggle('on',view==='about'?b.dataset.mode==='about':b.dataset.mode===S.mode));
  $('#pInk').hidden=view!=='tool'||S.mode!=='ink';$('#pPhoto').hidden=view!=='tool'||S.mode!=='photo';
+ const pt=$('#pTpl');if(pt)pt.hidden=view!=='tool'||S.mode!=='tpl';
  const pa=$('#pAbout');if(pa)pa.hidden=view!=='about';
  $$('[data-act=zoom]').forEach(b=>b.classList.toggle('on',String(b.dataset.z)===String(zoom)));
 }
@@ -309,6 +344,7 @@ function decode(f){return new Promise((res,rej)=>{const u=URL.createObjectURL(f)
  im.onerror=()=>{URL.revokeObjectURL(u);rej()};im.src=u})}
 function thumb(c){const k=68/Math.max(c.width,c.height),t=mk(Math.max(1,Math.round(c.width*k)),Math.max(1,Math.round(c.height*k)));t.getContext('2d').drawImage(c,0,0,t.width,t.height);return t.toDataURL('image/jpeg',.7)}
 async function addFiles(files){
+ if(S.mode==='tpl'){toast('Templates don’t use photos — switch to Ink-saver or Photo sheets to add images.');return}
  const all=[...files],list=all.filter(f=>/^image\/(png|jpe?g|webp)$/.test(f.type));
  if(!list.length){toast('Unsupported file. Use PNG, JPG or WebP images.');return}
  if(list.length<all.length)toast('Some files were skipped. Only PNG, JPG and WebP are supported.');
@@ -337,6 +373,18 @@ function ui(){queues();sync();render()}
 
 /* ---------- ink filter engine ---------- */
 function inkFx(c,o){
+ if(o.scan){
+  /* Scan document: grayscale, stretch the levels so the paper is white
+     and the print is black, then threshold to pure black & white.
+     Runs on its own — the other filter sliders are ignored in this mode. */
+  const x=c.getContext('2d'),w=c.width,h=c.height,im=x.getImageData(0,0,w,h),d=im.data,n=d.length;
+  const lum=new Float32Array(n/4);
+  let lo=255,hi=0;
+  for(let i=0,j=0;i<n;i+=4,j++){const v=.299*d[i]+.587*d[i+1]+.114*d[i+2];lum[j]=v;if(v<lo)lo=v;if(v>hi)hi=v}
+  const span=Math.max(1,hi-lo);
+  for(let i=0,j=0;i<n;i+=4,j++){const v=(lum[j]-lo)/span*255;d[i]=d[i+1]=d[i+2]=v>=140?255:0;d[i+3]=255}
+  x.putImageData(im,0,0);return;
+ }
  const x=c.getContext('2d'),w=c.width,h=c.height,im=x.getImageData(0,0,w,h),d=im.data,n=d.length;
  const cf=o.con*2.55,f=259*(cf+255)/(255*(259-cf)),b=o.bri*2.55,wp=255/o.white,mono=o.mono!=='color';
  for(let i=0;i<n;i+=4){let r=d[i],g=d[i+1],l=d[i+2];
@@ -363,13 +411,14 @@ function meter(){
 
 /* ---------- sheet geometry ---------- */
 function inkGrid(){
- const o=S.ink,L=o.orient==='landscape',W=L?297:210,H=L?210:297,p=+o.per;let cols=1,rows=1;
+ const o=S.ink,L=o.orient==='landscape',ps=SHEET[o.paper]||SHEET.a4,W=L?ps[1]:ps[0],H=L?ps[0]:ps[1],p=+o.per;let cols=1,rows=1;
  if(p===2)[cols,rows]=L?[2,1]:[1,2];else if(p===4)[cols,rows]=[2,2];else if(p===6)[cols,rows]=L?[3,2]:[2,3];
  return{W,H,cols,rows,cw:Math.max(5,(W-2*o.margin-(cols-1)*o.gap)/cols),ch:Math.max(5,(H-2*o.margin-(rows-1)*o.gap)/rows)};
 }
 const inkPages=()=>Math.max(1,Math.ceil(INK.length/S.ink.per));
 function photoGeom(){const o=S.photo;return{W:o.pw,H:o.ph,cols:Math.max(0,Math.floor((o.pw-2*o.margin+o.gap)/(o.w+o.gap))),rows:Math.max(0,Math.floor((o.ph-2*o.margin+o.gap)/(o.h+o.gap)))}}
-const dims=()=>S.mode==='ink'?inkGrid():photoGeom();
+function tplGeom(){const s=SHEET[S.ink.paper]||SHEET.a4;return{W:s[0],H:s[1],cols:0,rows:0}}
+const dims=()=>S.mode==='ink'?inkGrid():S.mode==='tpl'?tplGeom():photoGeom();
 const P=(mm,dpi)=>Math.round(mm/25.4*dpi);
 function hint(cv,msg){const x=cv.getContext('2d');x.fillStyle='#9a9aa0';x.textAlign='center';x.textBaseline='middle';x.font=`${cv.width/24}px system-ui,sans-serif`;x.fillText(msg,cv.width/2,cv.height/2)}
 
@@ -437,11 +486,80 @@ function initCrop(){const cv=$('#crop');let dr=null;
  cv.addEventListener('wheel',e=>{const p=PH[active];if(!p)return;e.preventDefault();p.z=Math.min(4,Math.max(1,p.z*(e.deltaY<0?1.06:.94)));clampCrop(p);sync();render()},{passive:false});
 }
 
+/* ---------- ready-made templates ---------- */
+function syncTplOpts(){
+ const k=S.tpl.kind,el=$('#tplOpts');if(!el)return;
+ if(k==='lined')el.innerHTML=sel('tpl','line','Line spacing',[['7','7 mm — narrow'],['9','9 mm — wide']]);
+ else if(k==='grid')el.innerHTML=sel('tpl','grid','Grid size',[['5','5 mm'],['10','10 mm']]);
+ else if(k==='flash')el.innerHTML=`<div class="two">${sel('tpl','tcols','Columns',[['2','2'],['3','3']])}${sel('tpl','trows','Rows',[['3','3'],['4','4']])}</div>`;
+ else if(k==='labels')el.innerHTML='<p class="mu">2 columns × 5 rows of blank labels with cut guides.</p>';
+ else if(k==='todo')el.innerHTML=sel('tpl','todo','Lines',[['6','6'],['12','12'],['18','18']]);
+ else if(k==='cal')el.innerHTML=`<label class="row"><span>Month</span><input type="month" data-g="tpl" data-k="month"></label>`;
+ $$('#tplKinds .btn').forEach(b=>b.classList.toggle('on',b.dataset.tplkind===k));
+ sync();
+}
+function drawTpl(cv,dpi){
+ const g=tplGeom(),p=m=>P(m,dpi),W=g.W,H=g.H;
+ cv.width=p(W);cv.height=p(H);
+ const x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,cv.width,cv.height);
+ const k=S.tpl.kind,mx=12,my=12;
+ const line=(a,b,c2,d)=>{x.beginPath();x.moveTo(p(a),p(b));x.lineTo(p(c2),p(d));x.stroke()};
+ if(k==='lined'){
+  x.strokeStyle='#e2574c';x.lineWidth=Math.max(1,p(.3));line(25,my,25,H-my);
+  x.strokeStyle='#a9bce0';x.lineWidth=Math.max(1,p(.25));
+  for(let y=my+S.tpl.line;y<=H-my;y+=S.tpl.line)line(mx,y,W-mx,y);
+ }else if(k==='grid'){
+  x.strokeStyle='#d5dae3';x.lineWidth=Math.max(1,p(.2));
+  for(let gx=mx;gx<=W-mx;gx+=S.tpl.grid)line(gx,my,gx,H-my);
+  for(let gy=my;gy<=H-my;gy+=S.tpl.grid)line(mx,gy,W-mx,gy);
+ }else if(k==='flash'){
+  const cols=S.tpl.tcols,rows=S.tpl.trows,gap=4;
+  const cw=(W-2*mx-(cols-1)*gap)/cols,ch=(H-2*my-(rows-1)*gap)/rows;
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+   const X=mx+c*(cw+gap),Y=my+r*(ch+gap);
+   x.strokeStyle='#555';x.lineWidth=Math.max(1,p(.3));x.strokeRect(p(X),p(Y),p(cw),p(ch));
+   x.strokeStyle='#c8c8c8';x.lineWidth=Math.max(1,p(.25));line(X+4,Y+7,X+cw-4,Y+7);
+  }
+ }else if(k==='labels'){
+  const cols=2,rows=5,gap=3;
+  const cw=(W-2*mx-(cols-1)*gap)/cols,ch=(H-2*my-(rows-1)*gap)/rows;
+  x.strokeStyle='#999';x.lineWidth=Math.max(1,p(.25));x.setLineDash([p(2),p(2)]);
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)x.strokeRect(p(mx+c*(cw+gap)),p(my+r*(ch+gap)),p(cw),p(ch));
+  x.setLineDash([]);
+ }else if(k==='todo'){
+  x.textAlign='left';x.textBaseline='alphabetic';
+  x.font=`700 ${p(8)}px system-ui,sans-serif`;x.fillStyle='#222';x.fillText('TO-DO',p(mx),p(26));
+  x.font=`${p(3.5)}px system-ui,sans-serif`;x.fillStyle='#888';x.fillText('Date: _______________',p(mx),p(33));
+  const n=S.tpl.todo,step=10;let y=42;
+  x.strokeStyle='#555';x.lineWidth=Math.max(1,p(.3));
+  for(let i=0;i<n&&y<=H-my;i++){x.strokeRect(p(mx),p(y),p(5),p(5));line(mx+8,y+2.5,W-mx,y+2.5);y+=step}
+ }else if(k==='cal'){
+  let ym=S.tpl.month;if(!/^\d{4}-\d{2}$/.test(ym||''))ym=new Date().toISOString().slice(0,7);
+  const yy=+ym.slice(0,4),mm=+ym.slice(5,7);
+  const first=new Date(yy,mm-1,1),startDow=(first.getDay()+6)%7,days=new Date(yy,mm,0).getDate();
+  const weeks=Math.ceil((startDow+days)/7);
+  const title=first.toLocaleString('en',{month:'long'})+' '+yy;
+  x.textAlign='center';x.font=`700 ${p(8)}px system-ui,sans-serif`;x.fillStyle='#222';
+  x.fillText(title,p(W/2),p(24));
+  const top=30,cw=(W-2*mx)/7,ch=(H-my-top)/weeks;
+  const wd=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  x.font=`600 ${p(3.5)}px system-ui,sans-serif`;x.fillStyle='#555';
+  wd.forEach((d,i)=>x.fillText(d,p(mx+(i+.5)*cw),p(top-2)));
+  x.strokeStyle='#bbb';x.lineWidth=Math.max(1,p(.25));
+  for(let wI=0;wI<weeks;wI++)for(let dI=0;dI<7;dI++){
+   const X=mx+dI*cw,Y=top+wI*ch;
+   x.strokeRect(p(X),p(Y),p(cw),p(ch));
+   const day=wI*7+dI-startDow+1;
+   if(day>=1&&day<=days){x.textAlign='left';x.font=`${p(4)}px system-ui,sans-serif`;x.fillStyle='#222';x.fillText(String(day),p(X+2),p(Y+6))}
+  }
+ }
+}
+
 /* ---------- render, rulers, zoom ---------- */
 function render(){clearTimeout(rt);rt=setTimeout(doRender,60)}
 function doRender(){
  const cv=$('#sheet');$('#warn').textContent='';
- try{if(S.mode==='ink'){pg=Math.max(0,Math.min(pg,inkPages()-1));drawInk(cv,pg,110);meter()}else{pg=0;drawPhoto(cv,110);drawCrop()}}
+ try{if(S.mode==='ink'){pg=Math.max(0,Math.min(pg,inkPages()-1));drawInk(cv,pg,110);meter()}else if(S.mode==='tpl'){pg=0;drawTpl(cv,110)}else{pg=0;drawPhoto(cv,110);drawCrop()}}
  catch(e){toast('Could not draw the preview. Try a smaller image.')}
  $('#pgl').textContent=`Sheet ${pg+1} / ${S.mode==='ink'?inkPages():1}`;
  applyZoom();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
@@ -463,10 +581,11 @@ window.addEventListener('resize',()=>{if(zoom==='fit')applyZoom()});
 /* ---------- export ---------- */
 const pagesList=()=>S.mode==='ink'?[...Array(inkPages()).keys()]:[0];
 function ready(){
+ if(S.mode==='tpl')return true;
  if(S.mode==='ink'&&!INK.length){toast('Add at least one image before exporting.');return false}
  if(S.mode==='photo'){if(!PH.length){toast('Add a photo before exporting.');return false}const g=photoGeom();if(!g.cols||!g.rows){toast('The photo does not fit on this paper. Reduce the margins or photo size.');return false}}
  return true}
-function full(page){const c=mk(1,1);S.mode==='ink'?drawInk(c,page,300):drawPhoto(c,300);return c}
+function full(page){const c=mk(1,1);if(S.mode==='ink')drawInk(c,page,300);else if(S.mode==='tpl')drawTpl(c,300);else drawPhoto(c,300);return c}
 const fname=ext=>`printlab-${S.mode==='ink'?'notes':'photos'}-${new Date().toISOString().slice(0,10)}.${ext}`;
 async function exportPDF(){
  if(!ready())return;const J=window.jspdf&&window.jspdf.jsPDF;
@@ -500,11 +619,15 @@ document.addEventListener('click',e=>{
  const m=e.target.closest('[data-mode]');if(m){if(m.dataset.mode==='about'){view='about';$('#side').classList.add('open');sync();syncAbout();return}view='tool';S.mode=m.dataset.mode;pg=0;$('#side').classList.remove('open');ui();return}
  const at=e.target.closest('[data-atab]');if(at){aboutTab=at.dataset.atab;syncAbout();return}
  const as=e.target.closest('[data-astep]');if(as){aboutStep=aboutStep===+as.dataset.astep?null:+as.dataset.astep;syncAbout();return}
+ const tk=e.target.closest('[data-tplkind]');if(tk){S.tpl.kind=tk.dataset.tplkind;syncTplOpts();render();return}
  const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act,i=+b.dataset.i;
  if(a==='del'&&e.target.closest('.qi')&&b.classList.contains('qi'))return;
  switch(a){
   case'add':$('#file').click();break;case'paste':pasteBtn();break;case'pdf':exportPDF();break;case'png':exportPNG();break;case'print':printSheets();break;
-  case'reset':Object.assign(S.ink,{invert:false,hue:false,white:225,mono:'color',eco:false,bri:0,con:0,sharp:0});sync();render();break;
+  case'reset':Object.assign(S.ink,{invert:false,hue:false,white:225,mono:'color',eco:false,scan:false,bri:0,con:0,sharp:0});sync();render();break;
+  case'saveproj':saveProject();break;
+  case'openproj':openProject(b.dataset.id);break;
+  case'delproj':e.stopPropagation();deleteProject(b.dataset.id);break;
   case'up':mv(i,-1);break;case'down':mv(i,1);break;case'del':e.stopPropagation();del(i);break;
   case'sel':active=i;ui();break;case'menu':$('#side').classList.toggle('open');break;
   case'backtools':view='tool';ui();break;
@@ -524,6 +647,56 @@ function syncAbout(){
  $$('#pAbout .abstep').forEach(s=>{const open=aboutStep===+s.dataset.astep;s.classList.toggle('open',open);s.querySelector('p').hidden=!open});
 }
 
+/* ---------- my projects (IndexedDB) ----------
+   Photos are stored as images in IndexedDB, not localStorage — a photo
+   as a data URL would blow the ~5 MB localStorage limit. Settings ride
+   along in the same record. A full store never crashes the app: the
+   save reports it plainly instead. */
+const DBP=new Promise((res,rej)=>{
+ const rq=indexedDB.open('printlab',1);
+ rq.onupgradeneeded=()=>{rq.result.createObjectStore('projects',{keyPath:'id'})};
+ rq.onsuccess=()=>res(rq.result);rq.onerror=()=>rej(rq.error);
+});
+function idbTx(mode,fn){return DBP.then(db=>new Promise((res,rej)=>{const tx=db.transaction('projects',mode),st=tx.objectStore('projects'),rq=fn(st);rq.onsuccess=()=>res(rq.result);rq.onerror=()=>rej(rq.error)}))}
+const idbAll=()=>idbTx('readonly',st=>st.getAll());
+const idbPut=rec=>idbTx('readwrite',st=>st.put(rec));
+const idbDel=id=>idbTx('readwrite',st=>st.delete(id));
+const idbGet=id=>idbTx('readonly',st=>st.get(id));
+function imgFromURL(u){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>{const c=mk(im.naturalWidth,im.naturalHeight);c.getContext('2d').drawImage(im,0,0);res(c)};im.onerror=rej;im.src=u})}
+async function saveProject(){
+ const side=S.mode==='photo'?'photo':'ink';
+ const inp=$('#pjName-'+side);let name=(inp?inp.value:'').trim();
+ if(!name)name='Project '+new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+ try{
+  const imgs=(S.mode==='photo'?PH:INK).map(it=>({name:it.name,dataUrl:it.src.toDataURL('image/png'),z:it.z||1,cx:it.cx??.5,cy:it.cy??.5,bri:it.bri||0}));
+  const rec={id:Date.now(),name,mode:S.mode,savedAt:new Date().toISOString(),ink:JSON.parse(JSON.stringify(S.ink)),photo:JSON.parse(JSON.stringify(S.photo)),tpl:JSON.parse(JSON.stringify(S.tpl)),images:imgs};
+  await idbPut(rec);toast('Project saved on this device.');renderProjects();
+ }catch(e){
+  if(e&&e.name==='QuotaExceededError')toast('Storage is full — delete an old project or remove some images, then try again.',6000);
+  else toast('Could not save the project. Try removing some images first.',6000);
+ }
+}
+async function openProject(id){
+ try{
+  const rec=await idbGet(+id);if(!rec){toast('That project is gone.');renderProjects();return}
+  Object.assign(S.ink,rec.ink||{});Object.assign(S.photo,rec.photo||{});Object.assign(S.tpl,rec.tpl||{});
+  S.mode=rec.mode==='photo'?'photo':rec.mode==='tpl'?'tpl':'ink';
+  const list=[];
+  for(const im of rec.images||[]){try{const c=await imgFromURL(im.dataUrl);list.push({id:++uid,src:c,name:im.name,thumb:thumb(c),z:im.z||1,cx:im.cx??.5,cy:im.cy??.5,bri:im.bri||0})}catch(e){}}
+  if(S.mode==='photo'){PH=list;active=0;INK=[]}else{INK=list;PH=[]}
+  pg=0;view='tool';ui();toast('Opened “'+rec.name+'”.');
+ }catch(e){toast('Could not open that project. The saved data may be damaged.')}
+}
+async function deleteProject(id){
+ try{await idbDel(+id);renderProjects();toast('Project deleted.')}catch(e){toast('Could not delete that project.')}
+}
+async function renderProjects(){
+ let recs=[];try{recs=await idbAll()}catch(e){}
+ recs.sort((a,b)=>b.id-a.id);
+ const html=recs.length?recs.map(r=>`<div class="qi"><span>${esc(r.name)} <span style="color:var(--mu)">· ${esc((r.mode||'ink')==='photo'?'Photo':(r.mode||'ink')==='tpl'?'Template':'Ink-saver')} · ${(r.images||[]).length} image${(r.images||[]).length===1?'':'s'}</span></span><button class="btn sm" data-act="openproj" data-id="${r.id}">Open</button><button data-act="delproj" data-id="${r.id}" aria-label="Delete project">${ic('trash')}</button></div>`).join(''):'<p class="mu">No saved projects yet.</p>';
+ ['ink','photo'].forEach(s=>{const el=$('#pjList-'+s);if(el)el.innerHTML=html});
+}
+
 /* ---------- PWA install ---------- */
 let deferredPrompt=null;
 const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
@@ -540,7 +713,7 @@ document.addEventListener('click',e=>{if(e.target.closest('.installBtn'))install
 if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').then((reg)=>{reg.update().catch(()=>{});var hadController=!!navigator.serviceWorker.controller,refreshing=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(hadController&&!refreshing){refreshing=true;location.reload()}})}).catch(()=>{})})}
 refreshInstall();
 
-build();initCrop();ui();
+build();initCrop();ui();syncTplOpts();renderProjects();
 })();
 </script>
 </body>
