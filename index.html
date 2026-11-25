@@ -537,7 +537,7 @@ async function installApp(){
  toast('Install is not available in this browser. Try Chrome or Edge on Android, or Safari on iPhone.',6000);
 }
 document.addEventListener('click',e=>{if(e.target.closest('.installBtn'))installApp()});
-if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})})}
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').then((reg)=>{reg.update().catch(()=>{});var hadController=!!navigator.serviceWorker.controller,refreshing=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(hadController&&!refreshing){refreshing=true;location.reload()}})}).catch(()=>{})})}
 refreshInstall();
 
 build();initCrop();ui();
