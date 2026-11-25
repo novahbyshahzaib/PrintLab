@@ -76,6 +76,15 @@ a.btn{text-decoration:none}
 .feat p{margin:0;color:var(--mu);font-size:12px}
 .other{border:1px solid var(--ac);border-radius:8px;padding:12px;margin-bottom:12px;background:var(--card)}
 .other h3{margin:0 0 8px;font-size:14px}
+.proj{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
+.pcard{display:flex;flex-direction:column;gap:8px;border:1px solid var(--bd);border-radius:8px;padding:12px;background:var(--card)}
+.pcard .phead{display:flex;align-items:center;gap:10px}
+.picon{width:40px;height:40px;flex:none;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#141416}
+.picon svg{width:22px;height:22px}
+.pcard h4{margin:0;font-size:14px}
+.pcard .ptag{margin:2px 0 0;color:var(--ac);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.pcard p.pdesc{margin:0;color:var(--mu);font-size:13px;line-height:1.5;flex:1}
+.pcard .btn{align-self:flex-start}
 #toast{position:fixed;left:50%;bottom:76px;transform:translateX(-50%);background:#2C2C32;border:1px solid var(--ac);padding:9px 14px;border-radius:6px;z-index:50;display:none;max-width:90vw}
 #printArea{display:none}
 @media(max-width:860px){
@@ -104,6 +113,8 @@ a.btn{text-decoration:none}
 <symbol id="i-crop" viewBox="0 0 24 24"><path d="M6 2v14h16M2 6h14v16"/></symbol>
 <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
 <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4 11 13M9 5H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3"/></symbol>
+<symbol id="i-share" viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.5"/><circle cx="17.5" cy="5.5" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/><path d="m8.2 10.8 6.7-4M8.2 13.2l6.7 4"/></symbol>
+<symbol id="i-ai" viewBox="0 0 24 24"><path d="M12 3.5 13.8 8.7 19 10.5 13.8 12.3 12 17.5 10.2 12.3 5 10.5 10.2 8.7Z"/><path d="M18.5 15.5l.8 2.1 2.1.8-2.1.8-.8 2.1-.8-2.1-2.1-.8 2.1-.8Z"/></symbol>
 </defs></svg>
 
 <header>
@@ -160,6 +171,15 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 const ic=n=>`<svg class="i"><use href="#i-${n}"/></svg>`;
 const PAPER={a4:[210,297],'4x6':[102,152]};
 const SIZES={in:[35,45],stamp:[25,30],pan:[25,35],us:[51,51],post:[102,152]};
+/* ---------- my other work ----------
+   To add a project, add ONE entry to PROJECTS below — nothing else
+   needs to change. icon = an SVG symbol name (see the <symbol> list,
+   e.g. "share" -> #i-share). accent = the icon tile colour. */
+const PROJECTS=[
+ {name:"SnoahShare",tag:"File sharing",icon:"share",accent:"#D96B43",url:"https://get-connected-snoah.vercel.app",desc:"Share files between any two devices. Upload on one, open the room code on the other, and download. No accounts, no cables, no fuss."},
+ {name:"SnoahAI",tag:"AI assistant",icon:"ai",accent:"#E8A33D",url:"https://snoah-ai.vercel.app/",desc:"Your AI assistant in the browser — chat with 20+ AI models, voice conversations, workflows, web search and more."},
+];
+const projCard=p=>`<article class="pcard"><div class="phead"><div class="picon" style="background:${p.accent}">${ic(p.icon)}</div><div><h4>${p.name}</h4><p class="ptag">${p.tag}</p></div></div><p class="pdesc">${p.desc}</p><a class="btn" href="${p.url}" target="_blank" rel="noopener">Open ${ic('ext')}</a></article>`;
 const DEF={mode:'ink',
  ink:{invert:false,hue:false,white:225,mono:'color',eco:false,bri:0,con:0,sharp:0,per:1,orient:'portrait',margin:10,gap:5,border:false},
  photo:{paper:'a4',pw:210,ph:297,size:'in',w:35,h:45,strip:false,name:'',date:new Date().toISOString().slice(0,10),auto:true,count:6,marks:true,border:true,margin:8,gap:3}};
@@ -249,8 +269,8 @@ $('#side').innerHTML=`
   </div>
  </div>
  <div class="other"><h3>See my other work</h3>
-  <p class="mu"><b style="color:var(--tx)">SnoahShare</b> — share files between any two devices. Upload on one, open the room code on the other, and download. No accounts, no cables, no fuss.</p>
-  <div class="btns"><a class="btn pri" href="https://get-connected-snoah.vercel.app" target="_blank" rel="noopener">Open SnoahShare ${ic('ext')}</a></div></div>
+  <p class="mu">More free tools by the same creator — no sign-up needed.</p>
+  <div class="proj">${PROJECTS.map(projCard).join('')}</div></div>
  <button class="btn" data-act="backtools">${ic('left')}Back to tools</button>
 </section>`;}
 
